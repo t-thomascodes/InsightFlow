@@ -82,6 +82,7 @@ st.markdown("""
 
     .stButton>button:hover {
         background-color: var(--cyan);
+        color: var(--base3);  
     }
 
     .stDataFrame {
@@ -154,26 +155,27 @@ def display_basic_info(df):
     st.markdown("</div>", unsafe_allow_html=True)
 
 def display_dataset_analysis(df):
-    buffer = io.StringIO()
-    df.info(buf=buffer)
-    info_data = buffer.getvalue()
+    col1, col2 = st.columns([1, 1])
 
-    st.text(info_data)
-    st.write(df.describe())
+    with col1:
+        st.subheader("Dataset Info")
+        buffer = io.StringIO()
+        df.info(buf=buffer)
+        info_data = buffer.getvalue()
+        st.text(info_data)
 
-    null_values = df.isnull().sum().sum()
-    duplicated_values = df.duplicated().sum()
-    non_unique_count = 0
+    with col2:
+        st.subheader("Dataset Description")
+        st.write(df.describe())
 
-    for col in df.select_dtypes(include=['object', 'category']).columns:
-        if df[col].nunique() != df[col].shape[0]:
-            non_unique_count += 1
+        null_values = df.isnull().sum().sum()
+        duplicated_values = df.duplicated().sum()
+        non_unique_count = sum(df[col].nunique() != df[col].shape[0] for col in df.select_dtypes(include=['object', 'category']).columns)
 
-    st.markdown("<div class='info-section'>", unsafe_allow_html=True)
-    st.markdown(f"<p><strong>Null values:</strong> {null_values}</p>", unsafe_allow_html=True)
-    st.markdown(f"<p><strong>Duplicated values:</strong> {duplicated_values}</p>", unsafe_allow_html=True)
-    st.markdown(f"<p><strong>Non-unique categorical columns:</strong> {non_unique_count}</p>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("### Additional Information")
+        st.markdown(f"**Null values:** {null_values}")
+        st.markdown(f"**Duplicated values:** {duplicated_values}")
+        st.markdown(f"**Non-unique categorical columns:** {non_unique_count}")
 
 
 
@@ -420,16 +422,11 @@ if pages == 'Upload & Inspect':
 
     dataset = st.file_uploader('Upload your dataset here', type=['csv'])
 
-
-    # Only load the dataset if it is uploaded
     if dataset is not None and dataset.name.endswith('.csv'):
-        # Load and store dataset in session state
         st.session_state['dataset'] = load_dataset(dataset)
 
-    # Check if dataset is already stored in session_state
     if st.session_state['dataset'] is not None:
         dataset_df = st.session_state['dataset']
-        # Display basic dataset information
         display_basic_info(dataset_df)
 
         if st.button("Analyze Dataset", key="analyze_button"):
@@ -674,4 +671,5 @@ elif pages == 'Model Data':
 
 # Set Matplotlib parameters
 mpl.rcParams['agg.path.chunksize'] = 10000
+
 
